@@ -60,7 +60,7 @@ module.exports.getTileUrls = function(req, domains, path, format, publicUrl, ali
                 '/{z}/{x}/{y}.' + format + query);
     });
   } else {
-    uris.push(publicUrl + path + '/{z}/{x}/{y}.' + format + query)
+    uris.push(publicUrl + '/' + path + '/{z}/{x}/{y}.' + format + query)
   }
 
   return uris;

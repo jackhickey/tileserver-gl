@@ -1,5 +1,5 @@
 'use strict';
-
+/** imports */
 const fs = require('fs');
 const path = require('path');
 const zlib = require('zlib');
@@ -18,6 +18,11 @@ try {
 
 const utils = require('./utils');
 
+/** end of imports */
+
+/**
+ * options
+ */
 module.exports = function (options, repo, params, id, styles, publicUrl) {
   const app = express().disable('x-powered-by');
 

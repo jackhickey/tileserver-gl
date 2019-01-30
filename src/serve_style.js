@@ -9,7 +9,7 @@ var clone = require('clone'),
 var utils = require('./utils');
 
 module.exports = function(options, repo, params, id, publicUrl, reportTiles, reportFont) {
-  var app = express().disable('x-powered-by');
+  const app = express().disable('x-powered-by');
 
   var styleFile = path.resolve(options.paths.styles, params.style);
 
@@ -30,7 +30,7 @@ module.exports = function(options, repo, params, id, publicUrl, reportTiles, rep
         }
       }
       var identifier = reportTiles(mbtilesFile, fromData);
-      source.url = 'local://data/' + identifier + '.json';
+      source.url = `local:///data/${identifier}.json`;
     }
   });
 
@@ -55,7 +55,7 @@ module.exports = function(options, repo, params, id, publicUrl, reportTiles, rep
             .replace('{style}', path.basename(styleFile, '.json'))
             .replace('{styleJsonFolder}', path.relative(options.paths.sprites, path.dirname(styleFile)))
             );
-    styleJSON.sprite = 'local://styles/' + id + '/sprite';
+    styleJSON.sprite = `local://styles/${id}/sprite`;
   }
   if (styleJSON.glyphs && !httpTester.test(styleJSON.glyphs)) {
     styleJSON.glyphs = 'local://fonts/{fontstack}/{range}.pbf';
@@ -79,6 +79,8 @@ module.exports = function(options, repo, params, id, publicUrl, reportTiles, rep
       if (queryParams.length) {
         query = '?' + queryParams.join('&');
       }
+        console.log(query)
+
       return url.replace(
           'local://', utils.getPublicUrl(publicUrl, req)) + query;
     };
@@ -105,6 +107,7 @@ module.exports = function(options, repo, params, id, publicUrl, reportTiles, rep
     }
     var scale = req.params.scale,
         format = req.params.format;
+
     var filename = spritePath + (scale || '') + '.' + format;
     return fs.readFile(filename, function(err, data) {
       if (err) {

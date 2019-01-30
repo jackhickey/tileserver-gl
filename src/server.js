@@ -31,7 +31,7 @@ if (!isLight) {
 function start(opts) {
   console.log('Starting server');
 
-  var app = express().disable('x-powered-by'),
+  const AAAAPPP = express().disable('x-powered-by'),
       serving = {
         styles: {},
         rendered: {},
@@ -39,14 +39,15 @@ function start(opts) {
         fonts: {}
       };
 
-  app.enable('trust proxy');
+  AAAAPPP.enable('trust proxy');
 
+  // set logging
   if (process.env.NODE_ENV == 'production') {
-    app.use(morgan('tiny', {
+    AAAAPPP.use(morgan('tiny', {
       skip: function(req, res) { return opts.silent && (res.statusCode == 200 || res.statusCode == 304) }
     }));
   } else if (process.env.NODE_ENV !== 'test') {
-    app.use(morgan('dev', {
+    AAAAPPP.use(morgan('dev', {
       skip: function(req, res) { return opts.silent && (res.statusCode == 200 || res.statusCode == 304) }
     }));
   }
@@ -101,7 +102,7 @@ function start(opts) {
   var data = clone(config.data || {});
 
   if (opts.cors) {
-    app.use(cors());
+    AAAAPPP.use(cors());
   }
 
   Object.keys(config.styles || {}).forEach(function(id) {
@@ -112,7 +113,7 @@ function start(opts) {
     }
 
     if (item.serve_data !== false) {
-      startupPromises.push(serve_style(options, serving.styles, item, id, opts.publicUrl,
+      startupPromises.push(serve_style(options, serving.styles, item, id, opts.publicUrl + '/',
         function(mbtiles, fromData) {
           var dataItemId;
           Object.keys(data).forEach(function(id) {
@@ -142,7 +143,7 @@ function start(opts) {
         }, function(font) {
           serving.fonts[font] = true;
         }).then(function(sub) {
-          app.use('/styles/', sub);
+          AAAAPPP.use(`${opts.publicUrl}/styles/`, sub);
         }));
     }
     if (item.serve_rendered !== false) {
@@ -159,7 +160,7 @@ function start(opts) {
               return mbtilesFile;
             }
           ).then(function(sub) {
-            app.use('/styles/', sub);
+            AAAAPPP.use(`${opts.publicUrl}/styles/`, sub);
           })
         );
       } else {
@@ -170,7 +171,7 @@ function start(opts) {
 
   startupPromises.push(
     serve_font(options, serving.fonts).then(function(sub) {
-      app.use('/', sub);
+      AAAAPPP.use(`${opts.publicUrl}`, sub);
     })
   );
 
@@ -183,12 +184,12 @@ function start(opts) {
 
     startupPromises.push(
       serve_data(options, serving.data, item, id, serving.styles, opts.publicUrl).then(function(sub) {
-        app.use('/data/', sub);
+        AAAAPPP.use(`${opts.publicUrl}` + '/data/', sub);
       })
     );
   });
 
-  app.get('/styles.json', function(req, res, next) {
+  AAAAPPP.get(`${opts.publicUrl}/styles.json`, function(req, res, next) {
     var result = [];
     var query = req.query.key ? ('?key=' + req.query.key) : '';
     Object.keys(serving.styles).forEach(function(id) {
@@ -221,19 +222,19 @@ function start(opts) {
     return arr;
   };
 
-  app.get('/rendered.json', function(req, res, next) {
+  AAAAPPP.get(`${opts.publicUrl}/rendered.json`, function(req, res, next) {
     res.send(addTileJSONs([], req, 'rendered'));
   });
-  app.get('/data.json', function(req, res, next) {
+  AAAAPPP.get(`${opts.publicUrl}/data.json`, function(req, res, next) {
     res.send(addTileJSONs([], req, 'data'));
   });
-  app.get('/index.json', function(req, res, next) {
+  AAAAPPP.get(`${opts.publicUrl}/index.json`, function(req, res, next) {
     res.send(addTileJSONs(addTileJSONs([], req, 'rendered'), req, 'data'));
   });
 
   //------------------------------------
   // serve web presentations
-  app.use('/', express.static(path.join(__dirname, '../public/resources')));
+  AAAAPPP.use('/', express.static(path.join(__dirname, '../public/resources')));
 
   var templates = path.join(__dirname, '../public/templates');
   var serveTemplate = function(urlPath, template, dataGetter) {
@@ -246,6 +247,10 @@ function start(opts) {
         templateFile = path.resolve(paths.root, options.frontPage);
       }
     }
+
+    /**
+     * Does the template compile for handlebars? 
+     */
     startupPromises.push(new Promise(function(resolve, reject) {
       fs.readFile(templateFile, function(err, content) {
         if (err) {
@@ -255,7 +260,7 @@ function start(opts) {
         }
         var compiled = handlebars.compile(content.toString());
 
-        app.use(urlPath, function(req, res, next) {
+        AAAAPPP.use(urlPath, function(req, res, next) {
           var data = {};
           if (dataGetter) {
             data = dataGetter(req);
@@ -264,12 +269,15 @@ function start(opts) {
             }
           }
           data['server_version'] = packageJson.name + ' v' + packageJson.version;
+          console.log('I AM THE PUBLIC URL ', opts.publicUrl);
           data['public_url'] = opts.publicUrl || '/';
           data['is_light'] = isLight;
           data['key_query_part'] =
               req.query.key ? 'key=' + req.query.key + '&amp;' : '';
           data['key_query'] = req.query.key ? '?key=' + req.query.key : '';
           if (template === 'wmts') res.set('Content-Type', 'text/xml');
+          console.log('all data being passed to handlebars ', data)
+          data.seriously = 'LKAJSDLKJALSKDJLKASJDLJASLKDJLASJDLAJ';
           return res.status(200).send(compiled(data));
         });
         resolve();
@@ -347,7 +355,7 @@ function start(opts) {
     };
   });
 
-  serveTemplate('/styles/:id/$', 'viewer', function(req) {
+  serveTemplate(`${opts.publicUrl}/styles/:id/$`, 'viewer', function(req) {
     var id = req.params.id;
     var style = clone((config.styles || {})[id]);
     if (!style) {
@@ -365,7 +373,7 @@ function start(opts) {
     return res.redirect(301, '/styles/' + req.params.id + '/');
   });
   */
-  serveTemplate('/styles/:id/wmts.xml', 'wmts', function(req) {
+  serveTemplate(`${opts.publicUrl}/styles/:id/wmts.xml`, 'wmts', function(req) {
     var id = req.params.id;
     var wmts = clone((config.styles || {})[id]);
     if (!wmts) {
@@ -380,7 +388,7 @@ function start(opts) {
     return wmts;
   });
 
-  serveTemplate('/data/:id/$', 'data', function(req) {
+  serveTemplate(`${opts.publicUrl}/data/:id/$`, 'data', function(req) {
     var id = req.params.id;
     var data = clone(serving.data[id]);
     if (!data) {
@@ -396,7 +404,7 @@ function start(opts) {
     console.log('Startup complete');
     startupComplete = true;
   });
-  app.get('/health', function(req, res, next) {
+  AAAAPPP.get('/health', function(req, res, next) {
     if (startupComplete) {
       return res.status(200).send('OK');
     } else {
@@ -404,7 +412,7 @@ function start(opts) {
     }
   });
 
-  var server = app.listen(process.env.PORT || opts.port, process.env.BIND || opts.bind, function() {
+  var server = AAAAPPP.listen(process.env.PORT || opts.port, process.env.BIND || opts.bind, function() {
     var address = this.address().address;
     if (address.indexOf('::') === 0) {
       address = '[' + address + ']'; // literal IPv6 address
@@ -414,9 +422,9 @@ function start(opts) {
 
   // add server.shutdown() to gracefully stop serving
   enableShutdown(server);
-
+  console.log(JSON.stringify(AAAAPPP._router.stack, null, 4))
   return {
-    app: app,
+    app: AAAAPPP,
     server: server,
     startupPromise: startupPromise
   };
